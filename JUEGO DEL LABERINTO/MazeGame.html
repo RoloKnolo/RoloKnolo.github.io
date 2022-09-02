@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Game</title>
+</head>
+
+<body>
+    <h2><center>JUEGO DEL LABERINTO</center></h2>
+    <canvas width="616" height="556" id="cv"></cv>
+    <script>
+        // 425 (X), 3 (Y) RECTANGLE
+        // 542 (center X), 122 (center Y) CIRCLE
+        var cv = document.getElementById("cv");
+        var ctx = cv.getContext("2d");
+        var dX = 425;
+        var dY = 3;
+        var mazeWidth = 556;
+        var mazeHeight = 556;
+        var intervalo = null;
+  
+        function load(rectX, rectY) {
+            makeWhite(0, 0, cv.width, cv.height);
+            var laberinto = new Image();
+            laberinto.onload = function () {
+                ctx.drawImage(laberinto, 0, 0);
+                drawRectangle(rectX, rectY, "#0000FF");
+                ctx.beginPath();
+                ctx.arc(542, 122, 7, 0, 2 * Math.PI, false);
+                ctx.closePath();
+                ctx.fillStyle = 'yellow';
+                ctx.fill();
+            };
+            laberinto.src = "maze.gif";
+        }
+        function drawRectangle(x, y, style) {
+            makeWhite(dX, dY, 15, 15);
+            dX = x;
+            dY = y;
+            ctx.beginPath();
+            ctx.rect(x, y, 15, 15);
+            ctx.closePath();
+            ctx.fillStyle = style;
+            ctx.fill();
+        }
+
+        function movimiento(e) {
+            var newX;
+            var newY;
+            var movingAllowed;
+            e = e || window.event;
+            switch (e.keyCode) {
+                case 38:   // arrow up key
+                case 87: // W key
+                    newX = dX;
+                    newY = dY - 3;
+                    break;
+                case 37: // arrow left key
+                case 65: // A key
+                    newX = dX - 3;
+                    newY = dY;
+                    break;
+                case 40: // arrow down key
+                case 83: // S key
+                    newX = dX;
+                    newY = dY + 3;
+                    break;
+                case 39: // arrow right key
+                case 68: // D key
+                    newX = dX + 3;
+                    newY = dY;
+                    break;
+                default: return;
+            }
+            movingAllowed = canMoveTo(newX, newY);
+            if (movingAllowed === 1) {      // 1 means 'the rectangle can move'
+                drawRectangle(newX, newY, "#0000FF");
+                dX = newX;
+                dY = newY;
+            }
+            else if (movingAllowed === 2) { // 2 means 'the rectangle reached the end point'
+                clearInterval(intervalo);
+                makeWhite(0, 0, cv.width, cv.height);
+                ctx.font = "40px Arial";
+                ctx.fillStyle = "blue";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("Laberinto Completado!", cv.width / 2, cv.height / 2);   
+                window.removeEventListener("keydown", movimiento, true);
+            }
+        }
+        function canMoveTo(destX, destY) {
+            var imgData = ctx.getImageData(destX, destY, 15, 15);
+            var data = imgData.data;
+            var canMove = 1; // 1 means: the rectangle can move
+            if (destX >= 0 && destX <= mazeWidth - 15 && destY >= 0 && destY <= mazeHeight - 15) {
+                for (var i = 0; i < 4 * 15 * 15; i += 4) {
+                    if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0) { 
+                        canMove = 0; 
+                        break;
+                    }
+                    else if (data[i] === 0 && data[i + 1] === 255 && data[i + 2] === 0) { 
+                        canMove = 2; 
+                        break;
+                    }
+                }
+            }
+            else {
+                canMove = 0;
+            }
+            return canMove;
+        }
+        function tiempo(seconds) {
+            intervalo = setInterval(function () {
+                makeWhite(mazeWidth, 0, cv.width - mazeWidth, cv.height);
+
+                if (seconds === 0) {
+                    clearInterval(intervalo);
+                    window.removeEventListener("keydown", movimiento, true);
+                    makeWhite(0, 0, cv.width, cv.height);
+                    ctx.font = "40px Arial";
+                    ctx.fillStyle = "red";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("Se te acabo el tiempo...", cv.width / 2, cv.height / 2);
+                    return;
+                }
+                ctx.font = "20px Arial";
+                if (seconds <= 10 && seconds > 5) {
+                    ctx.fillStyle = "orangered";
+                }
+                else if (seconds <= 5) {
+                    ctx.fillStyle = "red";
+                }
+                else {
+                    ctx.fillStyle = "green";
+                }
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                var minutes = Math.floor(seconds / 60);
+                var secondsToShow = (seconds - minutes * 60).toString();
+                if (secondsToShow.length === 1) {
+                    secondsToShow = "0" + secondsToShow; 
+                }
+                ctx.fillText(minutes.toString() + ":" + secondsToShow, mazeWidth + 30, cv.height / 2);
+                seconds--;
+            }, 1000);
+        }
+        function makeWhite(x, y, w, h) {
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.closePath();
+            ctx.fillStyle = "white";
+            ctx.fill();
+        }
+        load(425, 3);
+        window.addEventListener("keydown", movimiento, true);
+        tiempo(180); // 2 minutes
+
+        
+    </script>
+</body>
+</html>
